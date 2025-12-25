@@ -1,0 +1,35 @@
+{
+	"manifest_version": 3,
+	"name": "Zephyr UI Extension",
+	"version": "0.1.0",
+	"description": "UI enhancements for Zephyr Test Management",
+	"permissions": ["storage"],
+	"host_permissions": [
+		"https://app.tm4j.smartbear.com/*",
+		"https://*.atlassian.net/*"
+	],
+	"content_scripts": [
+		{
+			"matches": [
+				"https://*.atlassian.net/*",
+				"https://app.tm4j.smartbear.com/*"
+			],
+			"js": ["src/content.ts"],
+			"all_frames": true
+		}
+	],
+	"icons": {
+		"16": "icon.png",
+		"48": "icon.png",
+		"128": "icon.png"
+	},
+	"web_accessible_resources": [
+		{
+			"resources": ["icon.png"],
+			"matches": [
+				"https://*.atlassian.net/*",
+				"https://app.tm4j.smartbear.com/*"
+			]
+		}
+	]
+}

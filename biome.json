@@ -1,0 +1,33 @@
+{
+	"$schema": "https://biomejs.dev/schemas/2.3.10/schema.json",
+	"assist": {
+		"actions": {
+			"source": {
+				"organizeImports": "off"
+			}
+		}
+	},
+	"linter": {
+		"enabled": true,
+		"rules": {
+			"recommended": true,
+			"style": {
+				"useImportType": "off"
+			}
+		}
+	},
+	"files": {
+		"includes": [
+			"**",
+			"!*.js",
+			"!src/v2/resources/**/*.ts",
+			"!dist/**/*",
+			"!node_modules/**/*",
+			"!coverage/**/*",
+			"!.git/**/*",
+			"!.github/**/*",
+			"!.vscode/**/*",
+			"!tools/generated-types.ts"
+		]
+	}
+}
