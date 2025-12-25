@@ -2,7 +2,7 @@
 	"manifest_version": 3,
 	"name": "Zephyr UI Extension",
 	"version": "0.1.0",
-	"description": "UI enhancements for Zephyr Test Management",
+	"description": "Productivity tools for Zephyr Scale: quick remove and shareable folder links",
 	"host_permissions": [
 		"https://app.tm4j.smartbear.com/*",
 		"https://*.atlassian.net/*"
