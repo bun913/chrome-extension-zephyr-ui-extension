@@ -3,7 +3,6 @@
 	"name": "Zephyr UI Extension",
 	"version": "0.1.0",
 	"description": "UI enhancements for Zephyr Test Management",
-	"permissions": ["storage"],
 	"host_permissions": [
 		"https://app.tm4j.smartbear.com/*",
 		"https://*.atlassian.net/*"
