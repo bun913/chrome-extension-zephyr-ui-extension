@@ -3,6 +3,7 @@ import { logger } from "./common/logger";
 import { isTestRunnerPage, isTestCasesPage } from "./common/url";
 import { initRemoveTestCaseFeature } from "./removeTestCaseFromTestRun";
 import { initOpenFolderFeature } from "./openFolderInTestCases";
+import { initFolderDisplayImprovements } from "./improveFolderDisplay";
 
 logger.info("Zephyr UI Extension loaded!");
 
@@ -12,6 +13,7 @@ logger.info("Zephyr UI Extension loaded!");
 function init() {
 	if (isTestRunnerPage()) {
 		initRemoveTestCaseFeature();
+		initFolderDisplayImprovements();
 	} else if (isTestCasesPage()) {
 		initOpenFolderFeature();
 	} else {
