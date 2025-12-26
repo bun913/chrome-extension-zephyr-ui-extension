@@ -1,4 +1,5 @@
 import { logger } from "../common/logger";
+import { isTestCasesPage } from "../common/url";
 import { checkAndAutoExpandFolder } from "./autoExpand";
 import { addLinkButtonsToFolders } from "./linkButton";
 
@@ -16,6 +17,10 @@ export async function initOpenFolderFeature(): Promise<void> {
 
 	// Re-add link buttons when DOM changes (new folders loaded)
 	const observer = new MutationObserver(() => {
+		// Only add buttons if still on test cases page
+		if (!isTestCasesPage()) {
+			return;
+		}
 		addLinkButtonsToFolders();
 	});
 
