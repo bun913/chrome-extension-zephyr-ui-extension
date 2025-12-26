@@ -24,6 +24,18 @@ UI enhancements for Zephyr Test Management. This Chrome extension adds productiv
   - Share the link with others or bookmark it
   - When opened, the extension automatically searches for the folder, expands it, and selects it
 
+### 3. Folder Path Display Improvement
+
+**Before:**
+![Folder paths before](docs/images/css_improvement/folder_paths_before.png)
+
+**After:**
+![Folder paths after](docs/images/css_improvement/folder_paths_after.png)
+
+- **What**: Improved CSS styling to display full folder paths clearly in nested folder structures
+- **Why**: Long nested folder paths were displayed as unreadable icons/emojis, making it difficult to identify the test case location
+- **How**: The extension automatically applies CSS improvements to make folder paths fully visible and readable as text
+
 ## Tech Stack
 
 - **TypeScript**: Type-safe development
