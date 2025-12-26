@@ -10,24 +10,32 @@ export function fixFolderLabelCss(): void {
 
 	for (const label of groupLabels) {
 		// Check if already fixed
-		if (label.hasAttribute("data-css-fixed")) {
+		if (label.hasAttribute("data-zephyr-ui-extension-css-fixed")) {
 			continue;
 		}
 
 		// Fix parent div height (remove fixed height)
-		const parentDiv = label.closest(".css-mx173x");
+		// Use parentElement instead of class name for stability
+		const parentDiv = label.parentElement;
 		if (parentDiv) {
 			(parentDiv as HTMLElement).style.height = "auto";
 		}
+
+		// Fix group-label span to allow wrapping
+		(label as HTMLElement).style.maxWidth = "100%";
+		(label as HTMLElement).style.overflow = "visible";
 
 		// Fix text span white-space (allow wrapping)
 		const textSpan = label.querySelector('div[role="presentation"] span');
 		if (textSpan) {
 			(textSpan as HTMLElement).style.whiteSpace = "normal";
+			(textSpan as HTMLElement).style.wordBreak = "break-word";
+			(textSpan as HTMLElement).style.maxWidth = "100%";
+			(textSpan as HTMLElement).style.display = "inline-block";
 		}
 
-		// Mark as fixed
-		label.setAttribute("data-css-fixed", "true");
+		// Mark as fixed (with extension prefix)
+		label.setAttribute("data-zephyr-ui-extension-css-fixed", "true");
 
 		logger.debug("Fixed folder label CSS");
 	}
