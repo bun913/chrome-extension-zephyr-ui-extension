@@ -18,6 +18,18 @@ export function isTestCasesPage(): boolean {
 }
 
 /**
+ * Check if current page is Test Cycle Add Test Cases page
+ * Example: #!/v2/testCycle/CPG-R2/addTestCases?assignedTestCaseId=...
+ */
+export function isTestCycleAddTestCasesPage(): boolean {
+	const hash = window.location.hash;
+	return (
+		hash.includes(URL_PATTERNS.TEST_CYCLE_ADD_TEST_CASES) &&
+		hash.includes("/addTestCases")
+	);
+}
+
+/**
  * Extract information from URL
  */
 export function extractUrlInfo(): {
@@ -55,6 +67,48 @@ export function extractUrlInfo(): {
 		testCycleKey: hashMatch[1],
 		assignedTestCaseId: hashMatch[2],
 		projectKey: projectKey,
+		projectId: projectId,
+	};
+}
+
+/**
+ * Extract Test Cycle information from URL
+ * Example: #!/v2/testCycle/CPG-R2/addTestCases?projectId=10000
+ */
+export function extractTestCycleInfo(): {
+	testRunKey: string;
+	projectId: string;
+} | null {
+	const hash = window.location.hash;
+
+	// Extract test run key from hash
+	// Example: #!/v2/testCycle/CPG-R2/addTestCases
+	const hashMatch = hash.match(/\/v2\/testCycle\/([^/]+)\/addTestCases/);
+
+	if (!hashMatch) {
+		logger.error("Failed to extract test cycle info from hash:", hash);
+		return null;
+	}
+
+	// Extract project ID from hash query parameters
+	// Hash format: #!/v2/testCycle/CPG-R2/addTestCases?projectId=10000
+	const hashQueryString = hash.split("?")[1] || "";
+	const hashParams = new URLSearchParams(hashQueryString);
+	let projectId = hashParams.get("projectId");
+
+	// Fallback: try window.location.search (for iframe)
+	if (!projectId) {
+		const urlParams = new URLSearchParams(window.location.search);
+		projectId = urlParams.get("projectId");
+	}
+
+	if (!projectId) {
+		logger.error("Failed to extract projectId from URL");
+		return null;
+	}
+
+	return {
+		testRunKey: hashMatch[1],
 		projectId: projectId,
 	};
 }
