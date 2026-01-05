@@ -1,7 +1,7 @@
 {
 	"name": "zephyr-ui-extension",
-	"version": "0.1.0",
-	"description": "Chrome extension to remove test cases from test cycles in Zephyr Test Runner",
+	"version": "0.2.0",
+	"description": "Chrome extension for UI enhancements in Zephyr Test Management",
 	"type": "module",
 	"scripts": {
 		"dev": "vite",
