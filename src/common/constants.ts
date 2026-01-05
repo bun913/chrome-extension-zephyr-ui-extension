@@ -17,4 +17,5 @@ export const SELECTORS = {
  */
 export const URL_PATTERNS = {
 	TEST_PLAYER: "/v2/testPlayer/",
+	TEST_CYCLE_ADD_TEST_CASES: "/v2/testCycle/",
 } as const;

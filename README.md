@@ -38,6 +38,14 @@ UI enhancements for Zephyr Test Management. This Chrome extension adds productiv
 - **Why**: Long nested folder paths were displayed as unreadable icons/emojis, making it difficult to identify the test case location
 - **How**: The extension automatically applies CSS improvements to make folder paths fully visible and readable as text
 
+### 4. Folder Path on Add Test Cases Page
+
+![Add folder path](docs/images/add_folder_path_on_add_test_case_page/add_folder_path.png)
+
+- **What**: Display folder path information for each test case on the Test Cycle's "Add Test Cases" page
+- **Why**: When adding test cases to a test cycle, it's difficult to identify which folder each test case belongs to. This makes it hard to select the right test cases.
+- **How**: The extension fetches folder information via API and displays the folder path next to each test case name with an extension icon
+
 ## Tech Stack
 
 - **TypeScript**: Type-safe development
@@ -55,6 +63,7 @@ src/
 │   ├── logger.ts        # Logger (dev/prod mode switching)
 │   ├── auth.ts          # Authentication (JWT token handling)
 │   ├── url.ts           # URL parsing utilities
+│   ├── dom.ts           # DOM utilities (waitForElement, etc.)
 │   └── api.ts           # API request functions
 ├── removeTestCaseFromTestRun/
 │   ├── ui.ts            # Button UI and DOM manipulation
@@ -64,6 +73,8 @@ src/
 │   ├── autoExpand.ts    # Auto-expand folder from URL parameters
 │   ├── linkButton.ts    # Link icon button to generate folder URLs
 │   └── index.ts         # Entry point for this feature
+├── displayFolderPath/
+│   └── index.ts         # Display folder path on Add Test Cases page
 └── content.ts           # Main content script (initialization)
 ```
 

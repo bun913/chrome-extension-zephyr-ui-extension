@@ -1,9 +1,14 @@
 // Zephyr UI Extension - Content Script
 import { logger } from "./common/logger";
-import { isTestRunnerPage, isTestCasesPage } from "./common/url";
+import {
+	isTestRunnerPage,
+	isTestCasesPage,
+	isTestCycleAddTestCasesPage,
+} from "./common/url";
 import { initRemoveTestCaseFeature } from "./removeTestCaseFromTestRun";
 import { initOpenFolderFeature } from "./openFolderInTestCases";
 import { initFolderDisplayImprovements } from "./improveFolderDisplay";
+import { initFolderPathFeature } from "./displayFolderPath";
 
 logger.info("Zephyr UI Extension loaded!");
 
@@ -16,6 +21,8 @@ function init() {
 		initFolderDisplayImprovements();
 	} else if (isTestCasesPage()) {
 		initOpenFolderFeature();
+	} else if (isTestCycleAddTestCasesPage()) {
+		initFolderPathFeature();
 	} else {
 		logger.debug("Not a supported page, extension will not activate");
 	}
