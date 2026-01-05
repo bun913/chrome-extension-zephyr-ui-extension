@@ -28,7 +28,7 @@ function addFolderPathToRow(
 	testRunItemsMap: Map<number, number | null>,
 ): void {
 	// Check if already processed
-	if (row.querySelector(".folder-path-label")) {
+	if (row.querySelector(".zephyr-extension-folder-path")) {
 		return;
 	}
 
@@ -55,14 +55,30 @@ function addFolderPathToRow(
 
 	// Create folder path label (inline after name, truncated)
 	const folderPathLabel = document.createElement("span");
-	folderPathLabel.className = "folder-path-label";
+	folderPathLabel.className = "zephyr-extension-folder-path";
 	folderPathLabel.style.cssText = `
 		margin-left: 8px;
 		font-size: 11px;
 		color: #888;
+		display: inline-flex;
+		align-items: center;
+		gap: 4px;
 	`;
 	folderPathLabel.title = folderPath; // Full path on hover
-	folderPathLabel.textContent = `(${folderPath})`;
+
+	// Add extension icon
+	const icon = document.createElement("img");
+	icon.src = chrome.runtime.getURL("icon.png");
+	icon.style.cssText = `
+		width: 12px;
+		height: 12px;
+	`;
+
+	const text = document.createElement("span");
+	text.textContent = folderPath;
+
+	folderPathLabel.appendChild(icon);
+	folderPathLabel.appendChild(text);
 
 	// Append to name cell
 	nameCell.appendChild(folderPathLabel);
@@ -81,8 +97,8 @@ function processGridRows(
 		return;
 	}
 
-	// Process all rows (virtualized grid uses div.draggable-row)
-	const rows = grid.querySelectorAll("div.draggable-row[data-row-id]");
+	// Process all rows with data-row-id attribute
+	const rows = grid.querySelectorAll("[data-row-id]");
 	for (const row of rows) {
 		addFolderPathToRow(row as HTMLElement, folderPathMap, testRunItemsMap);
 	}
