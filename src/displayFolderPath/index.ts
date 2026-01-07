@@ -53,16 +53,17 @@ function addFolderPathToRow(
 		return;
 	}
 
-	// Create folder path label (inline after name, truncated)
+	// Create folder path label (on new line)
 	const folderPathLabel = document.createElement("span");
 	folderPathLabel.className = "zephyr-extension-folder-path";
+	folderPathLabel.setAttribute("data-folder-path", folderPath);
 	folderPathLabel.style.cssText = `
-		margin-left: 8px;
-		font-size: 11px;
-		color: #888;
-		display: inline-flex;
+		display: flex;
 		align-items: center;
 		gap: 4px;
+		font-size: 11px;
+		color: #888;
+		margin-top: 2px;
 	`;
 	folderPathLabel.title = folderPath; // Full path on hover
 
@@ -72,6 +73,7 @@ function addFolderPathToRow(
 	icon.style.cssText = `
 		width: 12px;
 		height: 12px;
+		flex-shrink: 0;
 	`;
 
 	const text = document.createElement("span");
@@ -82,6 +84,152 @@ function addFolderPathToRow(
 
 	// Append to name cell
 	nameCell.appendChild(folderPathLabel);
+}
+
+// Maximum number of checkboxes to select at once
+const MAX_SELECTION = 40;
+
+/**
+ * Add filter UI (input + button)
+ */
+function addFilterUI(): void {
+	// Check if already added
+	if (document.getElementById("zephyr-extension-folder-filter")) {
+		return;
+	}
+
+	// Find the grid header using data-column-id attribute
+	const headerColumn = document.querySelector("[data-column-id]");
+	if (!headerColumn || !headerColumn.parentElement) {
+		logger.debug("Grid header not found for filter UI");
+		return;
+	}
+	const headerContainer = headerColumn.parentElement;
+
+	// Create filter container
+	const filterContainer = document.createElement("div");
+	filterContainer.id = "zephyr-extension-folder-filter";
+	filterContainer.style.cssText = `
+		display: flex;
+		align-items: center;
+		gap: 8px;
+		padding: 8px 0;
+	`;
+
+	// Add extension icon
+	const icon = document.createElement("img");
+	icon.src = chrome.runtime.getURL("icon.png");
+	icon.style.cssText = `
+		width: 16px;
+		height: 16px;
+	`;
+
+	// Create label
+	const label = document.createElement("span");
+	label.textContent = "Select by folder:";
+	label.style.cssText = `
+		font-size: 12px;
+		font-weight: 500;
+		color: #333;
+	`;
+
+	// Create input
+	const input = document.createElement("input");
+	input.type = "text";
+	input.id = "zephyr-extension-folder-filter-input";
+	input.placeholder = "e.g. app1/general_user/login";
+	input.style.cssText = `
+		padding: 6px 12px;
+		border: 1px solid #ddd;
+		border-radius: 3px;
+		font-size: 12px;
+		width: 300px;
+	`;
+
+	// Create button
+	const button = document.createElement("button");
+	button.textContent = "Select Matching (max 40)";
+	button.style.cssText = `
+		padding: 6px 12px;
+		background-color: #0052cc;
+		color: white;
+		border: none;
+		border-radius: 3px;
+		font-size: 12px;
+		cursor: pointer;
+	`;
+	button.addEventListener("click", handleFilterClick);
+	button.addEventListener("mouseenter", () => {
+		button.style.backgroundColor = "#0065ff";
+	});
+	button.addEventListener("mouseleave", () => {
+		button.style.backgroundColor = "#0052cc";
+	});
+
+	filterContainer.appendChild(icon);
+	filterContainer.appendChild(label);
+	filterContainer.appendChild(input);
+	filterContainer.appendChild(button);
+
+	// Insert before the header container
+	headerContainer.insertAdjacentElement("beforebegin", filterContainer);
+	logger.debug("Filter UI added");
+}
+
+/**
+ * Handle filter button click - select checkboxes for matching folder paths
+ */
+function handleFilterClick(): void {
+	const input = document.getElementById(
+		"zephyr-extension-folder-filter-input",
+	) as HTMLInputElement;
+	if (!input || !input.value.trim()) {
+		alert("Please enter a folder path to filter");
+		return;
+	}
+
+	const filterPath = input.value.trim();
+	const grid = document.querySelector(VIRTUALIZED_GRID_SELECTOR);
+	if (!grid) {
+		logger.error("Grid not found");
+		return;
+	}
+
+	// Find all rows with matching folder path
+	const allRows = grid.querySelectorAll("[data-row-id]");
+	let selectedCount = 0;
+
+	for (const row of allRows) {
+		if (selectedCount >= MAX_SELECTION) {
+			break;
+		}
+
+		const folderPathSpan = row.querySelector(
+			".zephyr-extension-folder-path",
+		) as HTMLElement;
+		if (!folderPathSpan) {
+			continue;
+		}
+
+		const folderPath = folderPathSpan.getAttribute("data-folder-path");
+		if (!folderPath || !folderPath.startsWith(filterPath)) {
+			continue;
+		}
+
+		// Find and click the checkbox
+		const checkbox = row.querySelector(
+			'td[data-cell-id="checkbox"] input[type="checkbox"]',
+		) as HTMLInputElement;
+		if (checkbox && !checkbox.checked) {
+			checkbox.click();
+			selectedCount++;
+		}
+	}
+
+	logger.info(`Selected ${selectedCount} test cases with folder path: ${filterPath}`);
+	if (selectedCount === 0) {
+		alert(`No matching test cases found for folder path:\n${filterPath}`);
+	}
 }
 
 /**
@@ -162,6 +310,9 @@ export async function initFolderPathFeature(): Promise<void> {
 	folderPathMapCache = buildFolderPathMap(folderTree);
 
 	logger.debug("Folder Path Map size:", folderPathMapCache.size);
+
+	// Add filter UI
+	addFilterUI();
 
 	// Process grid rows
 	processGridRows(folderPathMapCache, testRunItemsCache);
