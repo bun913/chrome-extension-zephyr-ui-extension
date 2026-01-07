@@ -4,7 +4,19 @@ UI enhancements for Zephyr Test Management. This Chrome extension adds productiv
 
 ## Features
 
-### 1. Remove Test Case from Test Cycle
+### 1. Bulk Select Test Cases by Folder Path
+
+![Filter by folder path](docs/images/add_folder_path_on_add_test_case_page/filter_by_path.gif)
+
+- **What**: Display folder paths and bulk select test cases by folder on the Test Cycle's "Test cases" tab
+- **Why**: Zephyr doesn't show folder information for test cases in a Test Cycle, making it hard to know where each test case belongs. Also, there's no way to bulk select, delete, or modify test cases by folder. This extension adds folder path visibility and enables folder-based bulk operations.
+- **How**:
+  - Each test case displays its folder path below the name
+  - Enter a folder path prefix in the "Select by folder" input (e.g., `app1/general_user`)
+  - Click the button to automatically check all matching test cases (up to 40 at a time)
+  - Uses prefix matching, so `app1` will match `app1/login`, `app1/user/profile`, etc.
+
+### 2. Remove Test Case from Test Cycle
 
 ![Remove button](docs/images/removeButton.png)
 
@@ -12,19 +24,19 @@ UI enhancements for Zephyr Test Management. This Chrome extension adds productiv
 - **Why**: Normally, you need to navigate back to the Test Cycle list to remove test cases. This extension allows you to do it directly from the Test Runner.
 - **How**: Click the red "Remove" button next to the test execution controls
 
-### 2. Shareable Links to Folders
+### 3. Shareable Links to Folders
 
 ![Copy folder permalink](docs/images/linkIcon.png)
 
 - **What**: Generate permanent links to specific folders in the Test Cases view
 - **Why**: Zephyr doesn't update the URL when you navigate folders, making it impossible to bookmark or share specific folder locations. This extension solves that problem.
 - **How**:
-  - Click the 🔗 icon next to any folder name in the Test Cases page
-  - The link is copied to your clipboard with visual feedback ("✓ Copied!")
+  - Click the link icon next to any folder name in the Test Cases page
+  - The link is copied to your clipboard with visual feedback
   - Share the link with others or bookmark it
   - When opened, the extension automatically searches for the folder, expands it, and selects it
 
-### 3. Folder Path Display Improvement
+### 4. Folder Path Display Improvement
 
 **Before:**
 
@@ -37,14 +49,6 @@ UI enhancements for Zephyr Test Management. This Chrome extension adds productiv
 - **What**: Improved CSS styling to display full folder paths clearly in nested folder structures
 - **Why**: Long nested folder paths were displayed as unreadable icons/emojis, making it difficult to identify the test case location
 - **How**: The extension automatically applies CSS improvements to make folder paths fully visible and readable as text
-
-### 4. Folder Path on Add Test Cases Page
-
-![Add folder path](docs/images/add_folder_path_on_add_test_case_page/add_folder_path.png)
-
-- **What**: Display folder path information for each test case on the Test Cycle's "Add Test Cases" page
-- **Why**: When adding test cases to a test cycle, it's difficult to identify which folder each test case belongs to. This makes it hard to select the right test cases.
-- **How**: The extension fetches folder information via API and displays the folder path next to each test case name with an extension icon
 
 ## Tech Stack
 
