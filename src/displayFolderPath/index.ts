@@ -226,7 +226,9 @@ function handleFilterClick(): void {
 		}
 	}
 
-	logger.info(`Selected ${selectedCount} test cases with folder path: ${filterPath}`);
+	logger.info(
+		`Selected ${selectedCount} test cases with folder path: ${filterPath}`,
+	);
 	if (selectedCount === 0) {
 		alert(`No matching test cases found for folder path:\n${filterPath}`);
 	}
