@@ -49,8 +49,7 @@ export async function handleRemoveClick(): Promise<void> {
 	);
 
 	if (success) {
-		alert("✅ Test case removed from test cycle successfully!");
-		// Reload page to reflect changes
+		// Reload immediately without alert
 		window.location.reload();
 	} else {
 		alert("Failed to remove test case from test cycle");
