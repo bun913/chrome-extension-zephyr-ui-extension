@@ -86,8 +86,11 @@ function addFolderPathToRow(
 	nameCell.appendChild(folderPathLabel);
 }
 
-// Maximum number of checkboxes to select at once
-const MAX_SELECTION = 40;
+// Maximum number of checkboxes to select
+const MAX_SELECTION = 50;
+
+// Counter for selected checkboxes (persists across button clicks)
+let selectedCounter = 0;
 
 /**
  * Add filter UI (input + button)
@@ -148,7 +151,7 @@ function addFilterUI(): void {
 
 	// Create button
 	const button = document.createElement("button");
-	button.textContent = "Select Matching (max 40)";
+	button.textContent = "Select Matching";
 	button.style.cssText = `
 		padding: 6px 12px;
 		background-color: #0052cc;
@@ -166,20 +169,58 @@ function addFilterUI(): void {
 		button.style.backgroundColor = "#0052cc";
 	});
 
+	// Create counter display
+	const counter = document.createElement("span");
+	counter.id = "zephyr-extension-selection-counter";
+	counter.style.cssText = `
+		font-size: 12px;
+		color: #666;
+	`;
+	counter.textContent = `Selected: ${selectedCounter}/${MAX_SELECTION}`;
+
 	filterContainer.appendChild(icon);
 	filterContainer.appendChild(label);
 	filterContainer.appendChild(input);
 	filterContainer.appendChild(button);
+	filterContainer.appendChild(counter);
 
 	// Insert before the header container
 	headerContainer.insertAdjacentElement("beforebegin", filterContainer);
 	logger.debug("Filter UI added");
+
+	// Listen for Delete button click to reset counter
+	const deleteButton = document
+		.querySelector(".delete-button-text")
+		?.closest("button");
+	if (deleteButton) {
+		deleteButton.addEventListener("click", () => {
+			selectedCounter = 0;
+			updateCounterDisplay();
+			logger.debug("Counter reset by Delete button");
+		});
+	}
+}
+
+/**
+ * Update the counter display
+ */
+function updateCounterDisplay(): void {
+	const counter = document.getElementById("zephyr-extension-selection-counter");
+	if (counter) {
+		counter.textContent = `Selected: ${selectedCounter}/${MAX_SELECTION}`;
+	}
 }
 
 /**
  * Handle filter button click - select checkboxes for matching folder paths
  */
 function handleFilterClick(): void {
+	// Check if already at max
+	if (selectedCounter >= MAX_SELECTION) {
+		alert(`Already selected ${MAX_SELECTION} test cases.`);
+		return;
+	}
+
 	const input = document.getElementById(
 		"zephyr-extension-folder-filter-input",
 	) as HTMLInputElement;
@@ -197,10 +238,11 @@ function handleFilterClick(): void {
 
 	// Find all rows with matching folder path
 	const allRows = grid.querySelectorAll("[data-row-id]");
-	let selectedCount = 0;
+	let newlySelected = 0;
 
 	for (const row of allRows) {
-		if (selectedCount >= MAX_SELECTION) {
+		// Check global counter
+		if (selectedCounter >= MAX_SELECTION) {
 			break;
 		}
 
@@ -222,14 +264,18 @@ function handleFilterClick(): void {
 		) as HTMLInputElement;
 		if (checkbox && !checkbox.checked) {
 			checkbox.click();
-			selectedCount++;
+			selectedCounter++;
+			newlySelected++;
 		}
 	}
 
+	// Update counter display
+	updateCounterDisplay();
+
 	logger.info(
-		`Selected ${selectedCount} test cases with folder path: ${filterPath}`,
+		`Selected ${newlySelected} test cases with folder path: ${filterPath} (total: ${selectedCounter})`,
 	);
-	if (selectedCount === 0) {
+	if (newlySelected === 0 && selectedCounter < MAX_SELECTION) {
 		alert(`No matching test cases found for folder path:\n${filterPath}`);
 	}
 }
