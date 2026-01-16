@@ -1,7 +1,7 @@
 {
 	"manifest_version": 3,
 	"name": "Zephyr UI Extension",
-	"version": "0.3.1",
+	"version": "0.3.2",
 	"description": "Productivity tools for Zephyr Scale: quick remove and shareable folder links",
 	"host_permissions": [
 		"https://app.tm4j.smartbear.com/*",
