@@ -1,7 +1,8 @@
-import { getJWT } from "../common/auth";
+import { refreshJWT } from "../common/auth";
 import { getTestRunId, removeTestRunItem } from "../common/api";
 import { extractUrlInfo } from "../common/url";
 import { logger } from "../common/logger";
+import { getTestCaseKeyFromDOM } from "../common/dom";
 
 /**
  * Handle remove button click
@@ -12,20 +13,38 @@ export async function handleRemoveClick(): Promise<void> {
 	// Extract URL information
 	const urlInfo = extractUrlInfo();
 	if (!urlInfo) {
-		alert("Failed to extract URL info");
+		logger.error("Failed to extract URL info");
+		alert("Failed to remove test case. Please refresh the page and try again.");
 		return;
 	}
 
 	logger.debug("Extracted info:", urlInfo);
 
-	// Get JWT token
-	const jwt = getJWT();
-	if (!jwt) {
-		alert("JWT token not found in cookies");
+	// Get testCaseKey from DOM
+	const testCaseKey = getTestCaseKeyFromDOM();
+	if (!testCaseKey) {
+		logger.error("Failed to get test case key from DOM");
+		alert("Failed to remove test case. Please refresh the page and try again.");
 		return;
 	}
 
-	logger.debug("JWT token found");
+	logger.debug("Test case key:", testCaseKey);
+
+	// Refresh JWT token before making API calls
+	logger.debug("Refreshing JWT token...");
+	const jwt = await refreshJWT(
+		urlInfo.projectId,
+		urlInfo.testCycleKey,
+		testCaseKey,
+	);
+
+	if (!jwt) {
+		logger.error("Failed to refresh JWT token");
+		alert("Failed to remove test case. Please refresh the page and try again.");
+		return;
+	}
+
+	logger.debug("JWT token refreshed successfully");
 
 	// Get Test Run ID
 	const testRunId = await getTestRunId(
@@ -34,7 +53,8 @@ export async function handleRemoveClick(): Promise<void> {
 		jwt,
 	);
 	if (!testRunId) {
-		alert("Failed to get test run ID");
+		logger.error("Failed to get test run ID");
+		alert("Failed to remove test case. Please refresh the page and try again.");
 		return;
 	}
 
@@ -52,6 +72,7 @@ export async function handleRemoveClick(): Promise<void> {
 		// Reload immediately without alert
 		window.location.reload();
 	} else {
-		alert("Failed to remove test case from test cycle");
+		logger.error("Failed to remove test case from test cycle");
+		alert("Failed to remove test case. Please refresh the page and try again.");
 	}
 }
