@@ -1,12 +1,19 @@
+import { findPathToFolder, getFolderTree } from "../common/api";
+import { getJWT } from "../common/auth";
 import { logger } from "../common/logger";
+
+/**
+ * Encode folder path to Base64
+ */
+function encodePathToBase64(path: number[]): string {
+	const pathString = path.join("-");
+	return btoa(pathString);
+}
 
 /**
  * Create link icon button
  */
-function createLinkButton(
-	folderName: string,
-	folderId: string,
-): HTMLButtonElement {
+function createLinkButton(folderId: string): HTMLButtonElement {
 	const button = document.createElement("button");
 	button.className = "zephyr-extension-folder-link-btn";
 	button.title = "Copy link to this folder";
@@ -42,12 +49,13 @@ function createLinkButton(
 	});
 
 	// Click event: Copy link to clipboard
-	button.addEventListener("click", (e) => {
+	button.addEventListener("click", async (e) => {
 		e.stopPropagation(); // Prevent folder selection
 
 		// Generate URL dynamically from iframe parameters
 		const urlParams = new URLSearchParams(window.location.search);
 		const projectKey = urlParams.get("projectKey");
+		const projectId = urlParams.get("projectId");
 		const parentOrigin = urlParams.get("xdm_e");
 
 		if (!projectKey || !parentOrigin) {
@@ -56,20 +64,50 @@ function createLinkButton(
 			return;
 		}
 
-		const decodedOrigin = decodeURIComponent(parentOrigin);
-		const baseUrl = `${decodedOrigin}/projects/${projectKey}?selectedItem=com.atlassian.plugins.atlassian-connect-plugin:com.kanoah.test-manager__main-project-page#!/v2/testCases`;
-		const encodedFolderName = encodeURIComponent(folderName);
-		const url = `${baseUrl}#uiExtensionsFolderName=${encodedFolderName}&uiExtensionsFolderId=${folderId}`;
-
-		// Use execCommand for iframe compatibility
-		const textarea = document.createElement("textarea");
-		textarea.value = url;
-		textarea.style.position = "fixed";
-		textarea.style.opacity = "0";
-		document.body.appendChild(textarea);
-		textarea.select();
+		// Show loading state
+		const originalContent = icon.textContent;
+		icon.textContent = "⏳";
+		button.style.opacity = "1";
 
 		try {
+			// Get folder path from API
+			let encodedPath = "";
+			if (projectId) {
+				const jwt = getJWT();
+				if (jwt) {
+					const folderTree = await getFolderTree(projectId, jwt);
+					if (folderTree && folderTree.length > 0) {
+						const path = findPathToFolder(
+							folderTree,
+							Number.parseInt(folderId, 10),
+						);
+						if (path) {
+							encodedPath = encodePathToBase64(path);
+							logger.debug(
+								`Folder path: ${path.join(" -> ")} => ${encodedPath}`,
+							);
+						}
+					}
+				}
+			}
+
+			const decodedOrigin = decodeURIComponent(parentOrigin);
+			const baseUrl = `${decodedOrigin}/projects/${projectKey}?selectedItem=com.atlassian.plugins.atlassian-connect-plugin:com.kanoah.test-manager__main-project-page#!/v2/testCases`;
+
+			// Build URL with folder path
+			let url = `${baseUrl}#uiExtensionsFolderId=${folderId}`;
+			if (encodedPath) {
+				url += `&p=${encodedPath}`;
+			}
+
+			// Use execCommand for iframe compatibility
+			const textarea = document.createElement("textarea");
+			textarea.value = url;
+			textarea.style.position = "fixed";
+			textarea.style.opacity = "0";
+			document.body.appendChild(textarea);
+			textarea.select();
+
 			const success = document.execCommand("copy");
 			document.body.removeChild(textarea);
 
@@ -77,9 +115,7 @@ function createLinkButton(
 				logger.info("Folder link copied to clipboard!");
 
 				// Visual feedback: Show "Copied!" text
-				const originalContent = icon.textContent;
 				icon.textContent = "✓";
-				button.style.opacity = "1";
 
 				const copiedText = document.createElement("span");
 				copiedText.textContent = "Copied!";
@@ -100,7 +136,8 @@ function createLinkButton(
 				throw new Error("execCommand failed");
 			}
 		} catch (error) {
-			document.body.removeChild(textarea);
+			icon.textContent = originalContent;
+			button.style.opacity = "0.6";
 			logger.error("Failed to copy to clipboard:", error);
 			alert("Failed to copy link to clipboard");
 		}
@@ -139,7 +176,7 @@ export function addLinkButtonsToFolders(): void {
 		}
 
 		// Add link button
-		const linkButton = createLinkButton(folderName, folderId);
+		const linkButton = createLinkButton(folderId);
 		nameWrapper.appendChild(linkButton);
 
 		logger.debug(`Link button added to folder: ${folderName} (${folderId})`);
