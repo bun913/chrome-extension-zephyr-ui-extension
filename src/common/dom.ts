@@ -40,30 +40,3 @@ export function waitForElement(selector: string): Promise<Element> {
 		logger.debug("MutationObserver is now observing...");
 	});
 }
-
-/**
- * Extract testCaseKey from DOM
- * Looks for <a> tag with href containing "/v2/testCase/{testCaseKey}"
- */
-export function getTestCaseKeyFromDOM(): string | null {
-	// Find all links that might contain test case key
-	const links = document.querySelectorAll<HTMLAnchorElement>(
-		'a[href*="/v2/testCase/"]',
-	);
-
-	for (const link of links) {
-		const href = link.getAttribute("href");
-		if (!href) continue;
-
-		// Extract test case key from href
-		// Example: #!/v2/testCase/PRJ-T1234
-		const match = href.match(/\/v2\/testCase\/([A-Z]+-T\d+)/);
-		if (match) {
-			logger.debug("Found testCaseKey in DOM:", match[1]);
-			return match[1];
-		}
-	}
-
-	logger.error("testCaseKey not found in DOM");
-	return null;
-}
