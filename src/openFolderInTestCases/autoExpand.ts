@@ -8,128 +8,175 @@ function sleep(ms: number): Promise<void> {
 }
 
 /**
- * Wait for element to appear in DOM (retry every 500ms)
+ * Decode Base64 encoded folder path
  */
-function waitForElement<T extends Element>(
-	selector: string,
-	maxRetries = 20,
-): Promise<T | null> {
-	return new Promise((resolve) => {
-		// Check immediately
-		const element = document.querySelector<T>(selector);
-		if (element) {
-			resolve(element);
-			return;
-		}
-
-		// Retry every 500ms
-		let retries = 0;
-		const interval = setInterval(() => {
-			const element = document.querySelector<T>(selector);
-			if (element) {
-				clearInterval(interval);
-				resolve(element);
-			} else {
-				retries++;
-				if (retries >= maxRetries) {
-					clearInterval(interval);
-					resolve(null);
-				}
-			}
-		}, 500);
-	});
+function decodePathFromBase64(encoded: string): number[] {
+	try {
+		const decoded = atob(encoded);
+		return decoded.split("-").map((id) => Number.parseInt(id, 10));
+	} catch (error) {
+		logger.error("Failed to decode path from Base64:", error);
+		return [];
+	}
 }
 
 /**
- * Open folder by search
+ * Wait for folder element (collapsed or expanded) to appear
  */
-async function openFolderBySearch(
-	folderName: string,
-	folderId: string,
-): Promise<void> {
-	logger.debug(`Opening folder: ${folderName} (${folderId})`);
+async function waitForFolderElement(
+	folderId: number,
+	maxRetries = 10,
+): Promise<Element | null> {
+	const selectors = [
+		`[data-testid="folder-item-collapsed-${folderId}"]`,
+		`[data-testid="folder-item-expanded-${folderId}"]`,
+		`[data-folder-id="${folderId}"]`,
+	];
 
-	// 1. Wait for search trigger button (max 3 seconds)
-	logger.debug("Waiting for search trigger...");
-	const searchTrigger = await waitForElement<HTMLButtonElement>(
-		'[data-testid="ktm-search-trigger"] button',
-		6, // 3 seconds
+	for (let retry = 0; retry < maxRetries; retry++) {
+		for (const selector of selectors) {
+			const element = document.querySelector(selector);
+			if (element) {
+				return element;
+			}
+		}
+		await sleep(500);
+	}
+	return null;
+}
+
+/**
+ * Expand a single folder by clicking its toggle button
+ */
+async function expandFolder(folderId: number): Promise<boolean> {
+	// Check if folder is already expanded
+	const expandedElement = document.querySelector(
+		`[data-testid="folder-item-expanded-${folderId}"]`,
 	);
-
-	if (!searchTrigger) {
-		logger.error("Search trigger not found");
-		return;
+	if (expandedElement) {
+		logger.debug(`Folder ${folderId} is already expanded`);
+		return true;
 	}
 
-	// 2. Check if search is already open
-	let searchInput = document.querySelector<HTMLInputElement>(
-		'[data-testid="ktm-folder-tree-search-input"] input',
+	// Find the collapsed folder element
+	const collapsedElement = document.querySelector(
+		`[data-testid="folder-item-collapsed-${folderId}"]`,
 	);
 
-	if (!searchInput) {
-		// Open search
-		logger.debug("Opening search...");
-		searchTrigger.click();
-		await sleep(300);
-
-		// Wait for search input (max 2 seconds)
-		searchInput = await waitForElement<HTMLInputElement>(
-			'[data-testid="ktm-folder-tree-search-input"] input',
-			4, // 2 seconds
+	if (!collapsedElement) {
+		// Folder might be a leaf node (no children) or doesn't exist
+		logger.debug(
+			`No collapsed element for folder ${folderId}, might be leaf node`,
 		);
+		return true;
 	}
 
-	if (!searchInput) {
-		logger.error("Search input not found");
-		return;
-	}
-
-	logger.debug("Search input found!");
-
-	// 2. Type folder name (React-compatible)
-	logger.debug("Typing folder name...");
-	searchInput.focus();
-
-	// Set value using native setter for React compatibility
-	const nativeInputValueSetter = Object.getOwnPropertyDescriptor(
-		window.HTMLInputElement.prototype,
-		"value",
-	)?.set;
-	if (nativeInputValueSetter) {
-		nativeInputValueSetter.call(searchInput, folderName);
-	}
-
-	searchInput.dispatchEvent(new Event("input", { bubbles: true }));
-	searchInput.dispatchEvent(new Event("change", { bubbles: true }));
-
-	logger.debug("Search input value:", searchInput.value);
-
-	// Wait for search results
-	logger.debug("Waiting for search results...");
-	await sleep(1500);
-
-	// 3. Click folder (select)
-	logger.debug("Looking for folder...");
-	const folder = document.querySelector(`[data-folder-id="${folderId}"]`);
-	if (folder) {
-		logger.debug("Found folder, clicking...");
-		(folder as HTMLElement).click();
-		await sleep(300);
-	} else {
-		logger.error("Folder not found");
-		return;
-	}
-
-	// 4. Clear search (× button)
-	logger.debug("Clearing search...");
-	const cancelButton = document.querySelector<HTMLButtonElement>(
-		'[data-testid="ktm-search-trigger"] button',
+	// Find the rotating chevron button inside
+	const chevron = collapsedElement.querySelector(
+		'[data-testid="rotating-chevron"]',
 	);
-	if (cancelButton) {
-		cancelButton.click();
+
+	if (!chevron) {
+		logger.debug(`No chevron found for folder ${folderId}`);
+		return true;
 	}
 
-	logger.info("Folder expanded and selected!");
+	// Click to expand
+	logger.debug(`Expanding folder ${folderId}`);
+	(chevron as HTMLElement).click();
+
+	// Wait for children to load
+	await sleep(300);
+	return true;
+}
+
+/**
+ * Find and click the folder name to select it
+ */
+function selectFolder(folderId: number): boolean {
+	// Try to find the folder name element with data-folder-id
+	const folderNameElement = document.querySelector(
+		`[data-folder-id="${folderId}"]`,
+	);
+
+	if (folderNameElement) {
+		logger.debug(`Clicking folder name element for ${folderId}`);
+		(folderNameElement as HTMLElement).click();
+		return true;
+	}
+
+	// Fallback: try clicking the expanded/collapsed container
+	const expandedElement = document.querySelector(
+		`[data-testid="folder-item-expanded-${folderId}"]`,
+	);
+	const collapsedElement = document.querySelector(
+		`[data-testid="folder-item-collapsed-${folderId}"]`,
+	);
+
+	const container = expandedElement || collapsedElement;
+	if (container) {
+		// Try to find a clickable element inside
+		const parent = container.closest("[data-folder-id]");
+		if (parent) {
+			logger.debug(`Clicking parent folder element for ${folderId}`);
+			(parent as HTMLElement).click();
+			return true;
+		}
+	}
+
+	logger.error(`Could not find clickable element for folder ${folderId}`);
+	return false;
+}
+
+/**
+ * Expand folders sequentially along the path
+ */
+async function expandFoldersAlongPath(folderPath: number[]): Promise<boolean> {
+	logger.info(`Expanding folder path: ${folderPath.join(" → ")}`);
+
+	for (let i = 0; i < folderPath.length; i++) {
+		const folderId = folderPath[i];
+		const isLast = i === folderPath.length - 1;
+
+		// Wait for folder element to appear
+		const folderElement = await waitForFolderElement(folderId, 10);
+
+		if (!folderElement) {
+			logger.error(`Folder element not found after waiting: ${folderId}`);
+			return false;
+		}
+
+		if (!isLast) {
+			// Expand all folders except the last one
+			const expanded = await expandFolder(folderId);
+			if (!expanded) {
+				logger.error(`Failed to expand folder: ${folderId}`);
+				return false;
+			}
+			// Wait a bit for children to render
+			await sleep(200);
+		} else {
+			// Click the last folder to select it
+			logger.info(`Selecting target folder: ${folderId}`);
+			selectFolder(folderId);
+		}
+	}
+
+	return true;
+}
+
+/**
+ * Wait for any folder element to appear (folder tree loaded)
+ */
+async function waitForFolderTreeLoaded(maxRetries = 20): Promise<boolean> {
+	for (let retry = 0; retry < maxRetries; retry++) {
+		const anyFolder = document.querySelector("[data-folder-id]");
+		if (anyFolder) {
+			return true;
+		}
+		await sleep(500);
+	}
+	return false;
 }
 
 /**
@@ -138,19 +185,49 @@ async function openFolderBySearch(
 export async function checkAndAutoExpandFolder(): Promise<void> {
 	const hash = window.location.hash;
 
-	// Parse URL parameters: #uiExtensionsFolderName=Normal%20Login&uiExtensionsFolderId=25925605
-	const folderNameMatch = hash.match(/#(?:.*&)?uiExtensionsFolderName=([^&]+)/);
-	const folderIdMatch = hash.match(/#(?:.*&)?uiExtensionsFolderId=([^&]+)/);
+	// Parse URL parameters
+	const folderIdMatch = hash.match(/[#&]uiExtensionsFolderId=([^&]+)/);
+	const pathMatch = hash.match(/[#&]p=([^&]+)/);
 
-	if (!folderNameMatch || !folderIdMatch) {
+	if (!folderIdMatch) {
 		logger.debug("No folder auto-expand parameters found");
 		return;
 	}
 
-	const folderName = decodeURIComponent(folderNameMatch[1]);
 	const folderId = folderIdMatch[1];
+	logger.info(`Auto-expanding folder ID: ${folderId}`);
 
-	logger.info(`Auto-expanding folder: ${folderName} (${folderId})`);
+	// Wait for folder tree to be loaded
+	const treeLoaded = await waitForFolderTreeLoaded();
+	if (!treeLoaded) {
+		logger.error("Folder tree not loaded");
+		return;
+	}
 
-	await openFolderBySearch(folderName, folderId);
+	// If path is provided, use it
+	if (pathMatch) {
+		const encodedPath = pathMatch[1];
+		const path = decodePathFromBase64(encodedPath);
+
+		if (path.length > 0) {
+			logger.info(`Using encoded path: ${path.join(" → ")}`);
+			const success = await expandFoldersAlongPath(path);
+			if (success) {
+				logger.info("Folder expanded and selected successfully!");
+			} else {
+				logger.error("Failed to expand folder path");
+			}
+			return;
+		}
+	}
+
+	// Fallback: just try to click the folder if it's visible
+	logger.info("No path provided, trying to find folder directly");
+	const targetFolderId = Number.parseInt(folderId, 10);
+	const folderElement = await waitForFolderElement(targetFolderId, 5);
+	if (folderElement) {
+		selectFolder(targetFolderId);
+	} else {
+		logger.error("Folder not found and no path provided");
+	}
 }

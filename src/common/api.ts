@@ -187,6 +187,35 @@ export function buildFolderPathMap(
 }
 
 /**
+ * Find path from root to target folder
+ * Returns array of folder IDs from root to target (inclusive)
+ */
+export function findPathToFolder(
+	folderTree: FolderNode[],
+	targetFolderId: number,
+): number[] | null {
+	function dfs(nodes: FolderNode[], path: number[]): number[] | null {
+		for (const node of nodes) {
+			const currentPath = [...path, node.id];
+
+			if (node.id === targetFolderId) {
+				return currentPath;
+			}
+
+			if (node.children && node.children.length > 0) {
+				const result = dfs(node.children, currentPath);
+				if (result) {
+					return result;
+				}
+			}
+		}
+		return null;
+	}
+
+	return dfs(folderTree, []);
+}
+
+/**
  * Remove test run item (Pattern 1: Simplest)
  */
 export async function removeTestRunItem(
